@@ -25,10 +25,9 @@ typedef struct {
     Direction moves[2 * RICOCHET_MAX_MOVES];
 } Route;
 
-void find_route(
+Route find_route(
         const Walls *walls,
         Position start,
-        Position end,
-        Route *solution);
+        Position end);
 
 #endif  // JASON_HENLINE_RICOCHET

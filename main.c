@@ -46,8 +46,7 @@ int main() {
     Position start = {.x = 1, .y = 1};
     Position end = {.x = 15, .y = 15};
 
-    Route solution;
-    find_route(&walls, start, end, &solution);
+    Route solution = find_route(&walls, start, end);
 
     printf("solution.length = %d\n", solution.length);
 }

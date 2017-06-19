@@ -1,6 +1,7 @@
 #include "ricochet.h"
 
-#include "string.h"
+#include <stdbool.h>
+#include <string.h>
 
 static const Direction left = {.x = -1, .y = 0};
 static const Direction right = {.x = 1, .y = 0};
@@ -15,7 +16,7 @@ static const Direction directions[4] = {
 };
 
 typedef struct {
-    int seen;
+    bool seen;
     Route route;
 } CellState;
 
@@ -105,7 +106,7 @@ static void search_backward(
                 is_wall(walls, cursor, rot90(d)) ||
                 is_wall(walls, cursor, rot270(d));
             if (is_new && has_orthog) {
-                state->seen = 1;
+                state->seen = true;
                 state->route = route;
                 state->route.moves[route.length] = d;
                 ++state->route.length;
@@ -115,42 +116,46 @@ static void search_backward(
     }
 }
 
-void find_route(
+Route find_route(
         const Walls *walls,
         Position start,
-        Position end,
-        Route *route) {
+        Position end) {
+    Route route;
     CellStates forward;
     CellStates backward;
 
     memset(&forward, 0, sizeof(forward));
     memset(&backward, 0, sizeof(backward));
 
-    forward.states[start.x][start.y].seen = 1;
+    forward.states[start.x][start.y].seen = true;
     forward.states[start.x][start.y].route.length = 0;
 
-    backward.states[end.x][end.y].seen = 1;
+    backward.states[end.x][end.y].seen = true;
     backward.states[end.x][end.y].route.length = 0;
 
     search_forward(&forward, walls, start, RICOCHET_MAX_MOVES);
     search_backward(&backward, walls, end, RICOCHET_MAX_MOVES);
 
-    route->length = 2 * RICOCHET_BOARD_WIDTH + 2;
+    route.length = 2 * RICOCHET_BOARD_WIDTH + 2;
     for (int x = 0; x < RICOCHET_BOARD_WIDTH; ++x) {
         for (int y = 0; y < RICOCHET_BOARD_WIDTH; ++y) {
             CellState f = forward.states[x][y];
             CellState b = backward.states[x][y];
             if (f.seen && b.seen &&
-                    (f.route.length + b.route.length < route->length)) {
-                *route = f.route;
-                route->length = f.route.length + b.route.length;
+                    (f.route.length + b.route.length < route.length)) {
+                route = f.route;
+                route.length = f.route.length + b.route.length;
                 for (int i = 0; i < b.route.length; ++i) {
-                    route->moves[f.route.length + i].x =
+                    route.moves[f.route.length + i].x =
                         -b.route.moves[b.route.length - 1 - i].x;
-                    route->moves[f.route.length + i].y =
+                    route.moves[f.route.length + i].y =
                         -b.route.moves[b.route.length - 1 - i].y;
                 }
             }
         }
     }
+    if (route.length == 2 * RICOCHET_BOARD_WIDTH + 2) {
+        route.length = -1;
+    }
+    return route;
 }
