@@ -4,7 +4,11 @@
 #define RICOCHET_BOARD_WIDTH 16
 #define RICOCHET_MAX_MOVES 6
 
-typedef int Walls[2][RICOCHET_BOARD_WIDTH][RICOCHET_BOARD_WIDTH + 1];
+typedef struct {
+    // Zero means no wall, nonzero means wall.
+    int rows[RICOCHET_BOARD_WIDTH + 1][RICOCHET_BOARD_WIDTH];
+    int cols[RICOCHET_BOARD_WIDTH][RICOCHET_BOARD_WIDTH + 1];
+} Walls;
 
 typedef struct {
     int x;
@@ -18,7 +22,7 @@ typedef struct {
 
 typedef struct {
     int length;
-    Direction moves[RICOCHET_MAX_MOVES];
+    Direction moves[2 * RICOCHET_MAX_MOVES];
 } Route;
 
 void find_route(

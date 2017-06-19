@@ -2,31 +2,117 @@
 
 #include "string.h"
 
-// One route for each cell.
-typedef struct {
-    Route routes[RICOCHET_BOARD_WIDTH * RICOCHET_BOARD_WIDTH];
-} CellRoutes;
-
-typedef struct {
-    int indices[RICOCHET_BOARD_WIDTH * RICOCHET_BOARD_WIDTH];
-    int length;
-} Indices;
-
 static const Direction left = {.x = -1, .y = 0};
 static const Direction right = {.x = 1, .y = 0};
 static const Direction up = {.x = 0, .y = 1};
 static const Direction down = {.x = 0, .y = -1};
 
-static int get_index(Position position) {
-    return position.x + position.y * RICOCHET_BOARD_WIDTH;
+static const Direction directions[4] = {
+    {.x = -1, .y = 0},
+    {.x = 1, .y = 0},
+    {.x = 0, .y = 1},
+    {.x = 0, .y = -1},
+};
+
+typedef struct {
+    int seen;
+    Route route;
+} CellState;
+
+typedef struct {
+    CellState states[RICOCHET_BOARD_WIDTH][RICOCHET_BOARD_WIDTH];
+} CellStates;
+
+static Direction rot90(Direction d) {
+    Direction result = {.x = -d.y, .y = d.x}; 
+    return result;
 }
 
-static Position get_position(int index) {
-    Position position = {
-        .x = index % RICOCHET_BOARD_WIDTH,
-        .y = index / RICOCHET_BOARD_WIDTH
-    };
-    return position;
+static Direction rot270(Direction d) {
+    Direction result = {.x = d.y, .y = -d.x};
+    return result;
+}
+
+static int is_same_direction(Direction d1, Direction d2) {
+    return d1.x == d2.x && d1.y == d2.y;
+}
+
+static int is_wall(
+        const Walls *walls,
+        Position p,
+        Direction d) {
+    if (is_same_direction(d, left)) {
+        return walls->rows[p.x][p.y];
+    } else if (is_same_direction(d, right)) {
+        return walls->rows[p.x + 1][p.y];
+    } else if (is_same_direction(d, up)) {
+        return walls->cols[p.x][p.y + 1];
+    } else if (is_same_direction(d, down)) {
+        return walls->cols[p.x][p.y];
+    } else {
+        return 1;
+    }
+}
+
+static void search_forward(
+        CellStates *states,
+        const Walls *walls,
+        Position start,
+        int level) {
+    if (!level) {
+        return;
+    }
+    const Route route = states->states[start.x][start.y].route;
+    const int length = route.length;
+    for (int i = 0; i < 4; ++i) {
+        Position cursor = start;
+        Direction d = directions[i];
+        while(!is_wall(walls, cursor, d)) {
+            cursor.x += d.x;
+            cursor.y += d.y;
+        }
+        CellState *state = &states->states[cursor.x][cursor.y];
+        int is_new = !state->seen || state->route.length > length + 1;
+        if (is_new) {
+            state->seen = 1;
+            state->route = route;
+            state->route.moves[route.length] = d;
+            ++state->route.length;
+            search_forward(states, walls, cursor, level - 1);
+        }
+    }
+}
+
+static void search_backward(
+        CellStates *states,
+        const Walls *walls,
+        Position start,
+        int level) {
+    if (!level) {
+        return;
+    }
+    const Route route = states->states[start.x][start.y].route;
+    const int length = route.length;
+    for (int i = 0; i < 4; ++i) {
+        Position cursor = start;
+        Direction d = directions[i];
+        while (!is_wall(walls, cursor, d)) {
+            cursor.x += d.x;
+            cursor.y += d.y;
+            CellState *state = &states->states[cursor.x][cursor.y];
+            int is_new = !state->seen || state->route.length > length + 1;
+            int has_orthog =
+                is_wall(walls, cursor, rot90(d)) ||
+                is_wall(walls, cursor, rot270(d));
+            if (is_new && has_orthog) {
+                state->seen = 1;
+                state->route = route;
+                state->route.moves[route.length] = d;
+                ++state->route.length;
+                search_backward(states, walls, cursor, level - 1);
+            }
+        }
+    }
 }
 
 void find_route(
@@ -34,87 +120,37 @@ void find_route(
         Position start,
         Position end,
         Route *route) {
-    CellRoutes forward;
-    CellRoutes backward;
+    CellStates forward;
+    CellStates backward;
+
     memset(&forward, 0, sizeof(forward));
     memset(&backward, 0, sizeof(backward));
-    // TODO(fred)
-}
 
-static Position move(const Walls *walls, Position start, Direction direction) {
-    Position position;
-    return position;
-    // TODO(fred) Move until the first wall is hit.
-}
+    forward.states[start.x][start.y].seen = 1;
+    forward.states[start.x][start.y].route.length = 0;
 
-static void search(
-        const Walls *walls,
-        Position start,
-        CellRoutes *routes) {
-    const int start_index = get_index(start);
-    routes->routes[start_index].length = 0;
+    backward.states[end.x][end.y].seen = 1;
+    backward.states[end.x][end.y].route.length = 0;
 
-    Direction directions[4] = {
-        left,
-        right,
-        up,
-        down,
-    };
+    search_forward(&forward, walls, start, RICOCHET_MAX_MOVES);
+    search_backward(&backward, walls, end, RICOCHET_MAX_MOVES);
 
-    Indices indices[2] = {
-        {.length = 0},
-        {.length = 0}
-    };
-
-    Indices *old_indices = &indices[0];
-    Indices *new_indices = &indices[1];
-
-    for (int d = 0; d < 4; ++d) {
-        int index = get_index(move(walls, start, directions[d]));
-        if (index == start_index) {
-            continue;
-        }
-        routes->routes[index].length = 1;
-        routes->routes[index].moves[0] = directions[d];
-        old_indices->indices[old_indices->length] = index;
-        ++old_indices->length;
-    }
-
-    for (int m = 1; m < RICOCHET_MAX_MOVES; ++m) {
-        for (int i = 0; i < old_indices->length; ++i) {
-            int index = old_indices->indices[i];
-            Route route = routes->routes[index];
-            Direction directions[2];
-            if (route.moves[route.length - 1].x) {
-                directions[0] = up;
-                directions[1] = down;
-            } else {
-                directions[0] = left;
-                directions[1] = right;
-            }
-            int new_index1 = get_index(
-                    move(walls, get_position(index), directions[0]));
-            if (new_index1 != start_index &&
-                    !routes->routes[new_index1].length) {
-                new_indices->indices[new_indices->length] = new_index1;
-                ++new_indices->length;
-                routes->routes[new_index1] = route;
-                routes->routes[new_index1].moves[route.length] = directions[0];
-                ++routes->routes[new_index1].length;
-            }
-            int new_index2 = get_index(
-                    move(walls, get_position(index), directions[1]));
-            if (new_index2 != start_index &&
-                    !routes->routes[new_index2].length) {
-                new_indices->indices[new_indices->length] = new_index2;
-                ++new_indices->length;
-                routes->routes[new_index2] = route;
-                routes->routes[new_index2].moves[route.length] = directions[1];
-                ++routes->routes[new_index2].length;
+    route->length = 2 * RICOCHET_BOARD_WIDTH + 2;
+    for (int x = 0; x < RICOCHET_BOARD_WIDTH; ++x) {
+        for (int y = 0; y < RICOCHET_BOARD_WIDTH; ++y) {
+            CellState f = forward.states[x][y];
+            CellState b = backward.states[x][y];
+            if (f.seen && b.seen &&
+                    (f.route.length + b.route.length < route->length)) {
+                *route = f.route;
+                route->length = f.route.length + b.route.length;
+                for (int i = 0; i < b.route.length; ++i) {
+                    route->moves[f.route.length + i].x =
+                        -b.route.moves[b.route.length - 1 - i].x;
+                    route->moves[f.route.length + i].y =
+                        -b.route.moves[b.route.length - 1 - i].y;
+                }
             }
         }
-        Indices *tmp = old_indices;
-        old_indices = new_indices;
-        new_indices = tmp;
     }
 }
