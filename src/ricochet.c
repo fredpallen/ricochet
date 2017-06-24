@@ -6,14 +6,14 @@
 
 static const Direction left = {.x = -1, .y = 0};
 static const Direction right = {.x = 1, .y = 0};
-static const Direction up = {.x = 0, .y = 1};
-static const Direction down = {.x = 0, .y = -1};
+static const Direction up = {.x = 0, .y = -1};
+static const Direction down = {.x = 0, .y = 1};
 
 static const Direction directions[4] = {
     {.x = -1, .y = 0},
     {.x = 1, .y = 0},
-    {.x = 0, .y = 1},
     {.x = 0, .y = -1},
+    {.x = 0, .y = 1},
 };
 
 typedef struct {
@@ -49,13 +49,13 @@ static int is_wall(
         Position p,
         Direction d) {
     if (is_same_direction(d, left)) {
-        return walls->rows[p.x][p.y];
+        return walls->vert[p.y][p.x];
     } else if (is_same_direction(d, right)) {
-        return walls->rows[p.x + 1][p.y];
+        return walls->vert[p.y][p.x + 1];
     } else if (is_same_direction(d, up)) {
-        return walls->cols[p.x][p.y + 1];
+        return walls->horz[p.y][p.x];
     } else if (is_same_direction(d, down)) {
-        return walls->cols[p.x][p.y];
+        return walls->horz[p.y + 1][p.x];
     } else {
         return 1;
     }

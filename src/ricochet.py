@@ -7,10 +7,10 @@ libricochet = ctypes.CDLL(
 BOARD_WIDTH = libricochet.get_board_width()
 MAX_MOVES = libricochet.get_max_moves()
 
-WallsRow = BOARD_WIDTH * ctypes.c_int
+WallsRow = BOARD_WIDTH * ctypes.c_bool
 WallsRows = (BOARD_WIDTH + 1) * WallsRow
 
-WallsCol = (BOARD_WIDTH + 1) * ctypes.c_int
+WallsCol = (BOARD_WIDTH + 1) * ctypes.c_bool
 WallsCols = BOARD_WIDTH * WallsCol
 
 
@@ -72,12 +72,12 @@ def StrToWalls(s):
             raise Exception('Illegal character in cols %s' % i)
     rows = WallsRows(
             *[
-                WallsRow(*[1 if c == '=' else 0 for c in chars])
+                WallsRow(*[c == '=' for c in chars])
                 for chars in row_chars
             ])
     cols = WallsCols(
             *[
-                WallsCol(*[1 if c == '|' else 0 for c in chars])
+                WallsCol(*[c == '|' for c in chars])
                 for chars in col_chars
             ])
     return Walls(rows=rows, cols=cols)
@@ -128,4 +128,4 @@ if __name__ == '__main__':
     route = libricochet.find_route(ctypes.byref(walls), start, end)
     print('route.length =', route.length)
     for i in range(route.length):
-        print('x =', route.moves[i].y, ', y = ', route.moves[i].x)
+        print('x =', route.moves[i].x, ', y = ', route.moves[i].y)
