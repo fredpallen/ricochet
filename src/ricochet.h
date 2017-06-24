@@ -25,6 +25,9 @@ typedef struct {
     Direction moves[2 * RICOCHET_MAX_MOVES];
 } Route;
 
+int get_board_width();
+int get_max_moves();
+
 Route find_route(
         const Walls *walls,
         Position start,

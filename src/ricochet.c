@@ -183,3 +183,11 @@ Route find_route(
     }
     return route;
 }
+
+int get_board_width() {
+    return RICOCHET_BOARD_WIDTH;
+}
+
+int get_max_moves() {
+    return RICOCHET_MAX_MOVES;
+}

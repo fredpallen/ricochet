@@ -1,7 +1,11 @@
 import ctypes
+import os
 
-BOARD_WIDTH = 16
-MAX_MOVES = 6
+libricochet = ctypes.CDLL(
+        os.path.join('@CMAKE_BINARY_DIR@', 'libricochet.so'))
+
+BOARD_WIDTH = libricochet.get_board_width()
+MAX_MOVES = libricochet.get_max_moves()
 
 WallsRow = BOARD_WIDTH * ctypes.c_int
 WallsRows = (BOARD_WIDTH + 1) * WallsRow
@@ -29,7 +33,6 @@ class Route(ctypes.Structure):
             ]
 
 if __name__ == '__main__':
-    libricochet = ctypes.CDLL('libricochet.so')
     libricochet.find_route.restype = Route
     
     walls = Walls(
