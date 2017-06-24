@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import ctypes
 import os
 
@@ -29,7 +31,7 @@ class Direction(ctypes.Structure):
 class Route(ctypes.Structure):
     _fields_ = [
             ('length', ctypes.c_int),
-            ('moves', MAX_MOVES * Direction),
+            ('moves', 2 * MAX_MOVES * Direction),
             ]
 
 def StrToWalls(s):
@@ -89,12 +91,12 @@ if __name__ == '__main__':
     walls = StrToWalls(
             """
             +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+            |   |                           |
+            +=+ + + + + + + + + + + + + + + +
             |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
+            + + + +=+ + + + + + + + + + + + +
+            | |     |                       |
+            + +=+ + + + + + + + + + + + + + +
             |                               |
             + + + + + + + + + + + + + + + + +
             |                               |
