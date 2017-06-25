@@ -17,7 +17,7 @@ WallsCols = BOARD_WIDTH * WallsCol
 
 
 class Walls(ctypes.Structure):
-    _fields_ = [('rows', WallsRows), ('cols', WallsCols)]
+    _fields_ = [('horz', WallsRows), ('vert', WallsCols)]
 
 
 class Position(ctypes.Structure):
@@ -37,52 +37,53 @@ class Route(ctypes.Structure):
 def StrToWalls(s):
     """Makes a Walls instance from a string representation.
 
-    The string representation uses '|' for vertical wall, '=' for horizontal
-    wall, + for cell corner, and ' ' for no wall.
+    The string representation uses '|' for vertical wall, '--' for horizontal
+    wall, + for cell corner, ' ' for no vertical wall and 2*' ' for no
+    horizontal wall.
 
     4x4 example
     '''
-    +=+=+=+=+
-    |   |   |
-    + +=+=+ +
-    |     | |
-    + +=+ + +
-    |       |
-    + + + + +
-    | |     |
-    +=+=+=+=+
+    +--+--+--+--+
+    |     |     |
+    +  +--+--+  +
+    |        |  |
+    +  +--+  +  +
+    |           |
+    +  +  +  +  +
+    |  |        |
+    +--+--+--+--+
     '''
     """
     lines = s.strip().splitlines()
-    row_lines = [line.strip() for line in lines[0::2]]
-    col_lines = [line.strip() for line in lines[1::2]]
-    if len(row_lines) != BOARD_WIDTH + 1:
-        raise Exception('Saw %s rows' % len(row_lines))
-    if len(col_lines) != BOARD_WIDTH:
-        raise Exception('Saw %s cols' % len(col_lines))
-    row_chars = [line[1::2] for line in row_lines]
-    col_chars = [line[0::2] for line in col_lines]
-    for i, chars in enumerate(row_chars):
+    horz_lines = [line.strip() for line in lines[0::2]]
+    vert_lines = [line.strip() for line in lines[1::2]]
+    if len(horz_lines) != BOARD_WIDTH + 1:
+        raise Exception('Saw %s horz rows' % len(horz_lines))
+    if len(vert_lines) != BOARD_WIDTH:
+        raise Exception('Saw %s vert rows' % len(vert_lines))
+    horz_chars = [line[1::3] for line in horz_lines]
+    vert_chars = [line[0::3] for line in vert_lines]
+    for i, chars in enumerate(horz_chars):
         if len(chars) != BOARD_WIDTH:
-            raise Exception('Saw %s chars for rows %s' % (len(chars), i))
-        if not set(chars).issubset({' ', '='}):
-            raise Exception('Illegal character in rows %s' % i)
-    for i, chars in enumerate(col_chars):
+            raise Exception('Saw %s chars for horz %s' % (len(chars), i))
+        if not set(chars).issubset({' ', '-'}):
+            raise Exception('Illegal character in horz %s' % i)
+    for i, chars in enumerate(vert_chars):
         if len(chars) != BOARD_WIDTH + 1:
-            raise Exception('Saw %s chars for cols %s' % (len(chars), i))
+            raise Exception('Saw %s chars for vert %s' % (len(chars), i))
         if not set(chars).issubset({' ', '|'}):
-            raise Exception('Illegal character in cols %s' % i)
-    rows = WallsRows(
+            raise Exception('Illegal character in vert %s' % i)
+    horz = WallsRows(
             *[
-                WallsRow(*[c == '=' for c in chars])
-                for chars in row_chars
+                WallsRow(*[c == '-' for c in chars])
+                for chars in horz_chars
             ])
-    cols = WallsCols(
+    vert = WallsCols(
             *[
                 WallsCol(*[c == '|' for c in chars])
-                for chars in col_chars
+                for chars in vert_chars
             ])
-    return Walls(rows=rows, cols=cols)
+    return Walls(horz=horz, vert=vert)
 
 
 if __name__ == '__main__':
@@ -90,39 +91,39 @@ if __name__ == '__main__':
 
     walls = StrToWalls(
             """
-            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-            |   |                           |
-            +=+ + + + + + + + + + + + + + + +
-            |                               |
-            + + + +=+ + + + + + + + + + + + +
-            | |     |                       |
-            + +=+ + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + +=+=+ + + + + + + +
-            |             |   |             |
-            + + + + + + + + + + + + + + + + +
-            |             |   |             |
-            + + + + + + + +=+=+ + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |               |               |
-            + + + + + + + + + + + + + + + +=+
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |                               |
-            + + + + + + + + + + + + + + + + +
-            |               |               |
-            +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+            +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+            |     |                                         |
+            +--+  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +--+  +  +  +  +  +  +  +  +  +  +  +  +
+            |  |        |                                   |
+            +  +--+  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +--+--+  +  +  +  +  +  +  +
+            |                    |     |                    |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                    |     |                    |
+            +  +  +  +  +  +  +  +--+--+  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                       |                       |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +--+
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                                               |
+            +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+            |                       |                       |
+            +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
             """)
     start = Position(x=0, y=0)
     end = Position(x=15, y=15)
