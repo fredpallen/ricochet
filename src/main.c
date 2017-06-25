@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#include "ricochet.h"
+#include "simple.h"
 
 int main() {
-    Walls walls =  {
+    Board board =  {
         .horz = {
             {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
             {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -43,10 +43,28 @@ int main() {
         },
     };
 
-    Position start = {.x = 1, .y = 1};
-    Position end = {.x = 15, .y = 15};
+    Position goal = {.x = 15, .y = 15};
 
-    Route solution = find_route(&walls, start, end);
+    State state = {
+        .positions = {
+            {.x = 0, .y = 0},
+            {.x = 0, .y = 1},
+            {.x = 2, .y = 0},
+            {.x = 3, .y = 0},
+            {.x = 1, .y = 2},
+        }
+    };
+
+    Solution solution = solve(&board, &state, 0, goal);
 
     printf("solution.length = %d\n", solution.length);
+    for (int i = 0; i < solution.length; ++i) {
+        printf("move: robot = %d, start = (%d,%d), end = (%d,%d)\n",
+                solution.moves[i].robot,
+                solution.moves[i].start.x,
+                solution.moves[i].start.y,
+                solution.moves[i].end.x,
+                solution.moves[i].end.y);
+
+    }
 }
