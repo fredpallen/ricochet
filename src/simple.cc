@@ -3,6 +3,10 @@
 #include <queue>
 #include <unordered_set>
 
+#ifndef NDEBUG
+#include <stdio.h>
+#endif
+
 namespace {
 
 enum class Direction {
@@ -72,6 +76,33 @@ struct HashState {
 
 Solution solve(
         const Board *board, const State *state, int robot, Position goal) {
+#ifndef NDEBUG
+    printf("Searching for solution\n");
+    printf("robot = %d\n", robot);
+    printf("goal = (%d,%d)\n", goal.x, goal.y);
+    for (int i = 0; i < ROBOT_COUNT; ++i) {
+        printf(
+                "robot %d position = (%d,%d)\n",
+                i, state->positions[i].x, state->positions[i].y);
+    }
+    printf("horz =\n");
+    for (int y = 0; y < BOARD_WIDTH + 1; ++y) {
+        for (int x = 0; x < BOARD_WIDTH; ++x) {
+            printf("%d", board->horz[y][x]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+    printf("vert =\n");
+    for (int y = 0; y < BOARD_WIDTH; ++y) {
+        for (int x = 0; x < BOARD_WIDTH + 1; ++x) {
+            printf("%d", board->vert[y][x]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+#endif
+
     Solution solution;
     solution.length = 0;
 
@@ -110,6 +141,9 @@ Solution solve(
                         break;
                     }
                 }
+#ifndef NDEBUG
+                printf("robot = %d, end state = (%d,%d)\n", r, cursor.x, cursor.y);
+#endif
                 State end = entry.state;
                 end.positions[r] = cursor;
 

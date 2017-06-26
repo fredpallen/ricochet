@@ -17,10 +17,10 @@ WallsRows = (BOARD_WIDTH + 1) * WallsRow
 WallsCol = (BOARD_WIDTH + 1) * ctypes.c_bool
 WallsCols = BOARD_WIDTH * WallsCol
 
-BoardVert = (BOARD_WIDTH + 1) * ctypes.c_int
-BoardVerts = BOARD_WIDTH * BoardVert
 BoardHorz = BOARD_WIDTH * ctypes.c_int
 BoardHorzs = (BOARD_WIDTH + 1) * BoardHorz
+BoardVert = (BOARD_WIDTH + 1) * ctypes.c_int
+BoardVerts = BOARD_WIDTH * BoardVert
 
 class Board(ctypes.Structure):
     _fields_ = [('horz', BoardHorzs), ('vert', BoardVerts)]
@@ -37,7 +37,9 @@ class Move(ctypes.Structure):
     _fields_ = [('robot', ctypes.c_int), ('start', Position), ('end', Position)]
 
 # TODO: Get the value of 4 from the library.
-State = 4 * Position
+StatePositions = 4 * Position
+class State(ctypes.Structure):
+    _fields_ = [('positions', StatePositions)]
 
 # TODO: Get the value of 20 from the library.
 class Solution(ctypes.Structure):
@@ -347,13 +349,13 @@ if __name__ == '__main__':
 
     board = BASIC_BOARD.to_board()
     state = State(
-            positions=[
-                Position(x=0, y=0),
-                Position(x=0, y=1),
-                Position(x=0, y=2),
-                Position(x=0, y=3)])
+                positions=StatePositions(
+                    Position(x=0, y=0),
+                    Position(x=0, y=1),
+                    Position(x=0, y=2),
+                    Position(x=0, y=3)))
 
-    goal = Position(x=3, y=0)
+    goal = Position(x=12, y=14)
     solution = libsimple.solve(
             ctypes.byref(board),
             ctypes.byref(state),

@@ -49,8 +49,8 @@ typedef struct State {
 } State;
 
 typedef struct Board {
-    int vert[BOARD_WIDTH][BOARD_WIDTH + 1];
     int horz[BOARD_WIDTH + 1][BOARD_WIDTH];
+    int vert[BOARD_WIDTH][BOARD_WIDTH + 1];
 } Board;
 
 typedef struct Solution {
