@@ -1,4 +1,4 @@
-#define ROBOT_COUNT 5
+#define ROBOT_COUNT 4
 #define BOARD_WIDTH 16
 #define MAX_MOVES 20
 

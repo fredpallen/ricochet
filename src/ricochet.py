@@ -5,6 +5,8 @@ import os
 
 libricochet = ctypes.CDLL(
         os.path.join('@CMAKE_BINARY_DIR@', 'libricochet.so'))
+libsimple = ctypes.CDLL(
+        os.path.join('@CMAKE_BINARY_DIR@', 'libsimple.so'))
 
 BOARD_WIDTH = libricochet.get_board_width()
 MAX_MOVES = libricochet.get_max_moves()
@@ -15,6 +17,14 @@ WallsRows = (BOARD_WIDTH + 1) * WallsRow
 WallsCol = (BOARD_WIDTH + 1) * ctypes.c_bool
 WallsCols = BOARD_WIDTH * WallsCol
 
+BoardVert = (BOARD_WIDTH + 1) * ctypes.c_int
+BoardVerts = BOARD_WIDTH * BoardVert
+BoardHorz = BOARD_WIDTH * ctypes.c_int
+BoardHorzs = (BOARD_WIDTH + 1) * BoardHorz
+
+class Board(ctypes.Structure):
+    _fields_ = [('horz', BoardHorzs), ('vert', BoardVerts)]
+
 
 class Walls(ctypes.Structure):
     _fields_ = [('horz', WallsRows), ('vert', WallsCols)]
@@ -23,6 +33,15 @@ class Walls(ctypes.Structure):
 class Position(ctypes.Structure):
     _fields_ = [('x', ctypes.c_int), ('y', ctypes.c_int)]
 
+class Move(ctypes.Structure):
+    _fields_ = [('robot', ctypes.c_int), ('start', Position), ('end', Position)]
+
+# TODO: Get the value of 4 from the library.
+State = 4 * Position
+
+# TODO: Get the value of 20 from the library.
+class Solution(ctypes.Structure):
+    _fields_ = [('length', ctypes.c_int), ('moves', 20*Move)]
 
 class Direction(ctypes.Structure):
     _fields_ = [('x', ctypes.c_int), ('y', ctypes.c_int)]
@@ -38,6 +57,20 @@ class PWalls(object):
     def __init__(self, horz, vert):
         self.horz = horz
         self.vert = vert
+
+    def to_board(self):
+        return Board(
+                horz=BoardHorzs(
+                    *[BoardHorz(
+                        *[1 if c else 0 for c in row]
+                        ) for row in self.horz]
+                    ),
+                vert=BoardVerts(
+                    *[BoardVert(
+                        *[1 if c else 0 for c in row]
+                        ) for row in self.vert]
+                    )
+                )
 
     @staticmethod
     def from_str(s, width):
@@ -308,6 +341,37 @@ BASIC_BOARD.add_section(PWalls.from_str(SIMPLE_BLUE_SUN_QUAD, 8).rot270(), 0, 8)
 
 if __name__ == '__main__':
     libricochet.find_route.restype = Route
+    libsimple.solve.restype = Solution
+
+    print(BASIC_BOARD.to_str())
+
+    board = BASIC_BOARD.to_board()
+    state = State(
+            positions=[
+                Position(x=0, y=0),
+                Position(x=0, y=1),
+                Position(x=0, y=2),
+                Position(x=0, y=3)])
+
+    goal = Position(x=3, y=0)
+    solution = libsimple.solve(
+            ctypes.byref(board),
+            ctypes.byref(state),
+            0,
+            goal)
+
+    if solution.length < 0:
+        print('No solution')
+    else:
+        for i in range(solution.length):
+            move = solution.moves[i]
+            print(
+                    'robot = %s, start = (%s,%s), end = (%s,%s)' % (
+                        move.robot,
+                        move.start.x,
+                        move.start.y,
+                        move.end.x,
+                        move.end.y))
 
     walls = StrToWalls(
             """
@@ -348,7 +412,7 @@ if __name__ == '__main__':
     start = Position(x=0, y=0)
     end = Position(x=15, y=15)
 
-    route = libricochet.find_route(ctypes.byref(walls), start, end)
-    print('route.length =', route.length)
-    for i in range(route.length):
-        print('x =', route.moves[i].x, ', y = ', route.moves[i].y)
+    #route = libricochet.find_route(ctypes.byref(walls), start, end)
+    #print('route.length =', route.length)
+    #for i in range(route.length):
+    #    print('x =', route.moves[i].x, ', y = ', route.moves[i].y)
