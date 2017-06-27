@@ -8,4 +8,6 @@ add_library (ricochet SHARED ricochet.c)
 add_library (simple SHARED simple.cc)
 
 # Copy python file to directory with other build products.
+find_package(PythonInterp 2.7 REQUIRED)
+
 configure_file (ricochet.py ricochet.py @ONLY)
