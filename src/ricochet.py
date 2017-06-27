@@ -33,10 +33,11 @@ class State(ctypes.Structure):
 class Solution(ctypes.Structure):
     _fields_ = [('length', ctypes.c_int), ('moves', MAX_MOVES*Move)]
 
-class PWalls(object):
-    def __init__(self, horz, vert):
+class PBoard(object):
+    def __init__(self, horz, vert, targets):
         self.horz = horz
         self.vert = vert
+        self.targets = targets
 
     def to_board(self):
         return Board(
@@ -54,7 +55,7 @@ class PWalls(object):
 
     @staticmethod
     def from_str(s, width):
-        """Makes a PWalls instance from a string representation.
+        """Makes a PBoard instance from a string representation.
 
         The string representation uses '|' for vertical wall, '--' for
         horizontal wall, + for cell corner, ' ' for no vertical wall and 2*' '
@@ -94,7 +95,14 @@ class PWalls(object):
                 raise Exception('Illegal character in vert %s' % i)
         horz = [[c == '-' for c in chars] for chars in horz_chars]
         vert = [[c == '|' for c in chars] for chars in vert_chars]
-        return PWalls(horz=horz, vert=vert)
+        # Handle targets
+        targets = {}
+        for y, row in enumerate(vert_lines):
+            for x in range(BOARD_WIDTH):
+                cell = row[3*x+1:3*x+3].strip()
+                if cell:
+                    targets[cell] = (x,y)
+        return PBoard(horz=horz, vert=vert, targets=targets)
 
     def to_str(self):
         width = len(self.vert)
@@ -111,6 +119,9 @@ class PWalls(object):
             for x, value in enumerate(row):
                 if value:
                     chars[2*y+1][3*x] = '|'
+        for target, (x,y) in self.targets.iteritems():
+            for i, c in enumerate(target):
+                chars[2*y + 1][3*x + 1 + i] = c
         return '\n'.join([''.join(row) for row in chars]) + '\n'
 
     def rot90(self):
@@ -123,7 +134,11 @@ class PWalls(object):
         for y, row in enumerate(self.vert):
             for x, value in enumerate(row):
                 horz[x][width - y - 1] = value
-        return PWalls(horz=horz, vert=vert)
+        # Handle targets.
+        targets = {}
+        for target, (x,y) in self.targets.iteritems():
+            targets[target] = (width - y - 1, x)
+        return PBoard(horz=horz, vert=vert, targets=targets)
 
     def rot180(self):
         return self.rot90().rot90()
@@ -131,18 +146,21 @@ class PWalls(object):
     def rot270(self):
         return self.rot90().rot90().rot90()
 
-    def add_section(self, pwalls, xoffset, yoffset):
-        width = len(pwalls.vert)
-        for y, row in enumerate(pwalls.horz):
+    def add_section(self, pboard, xoffset, yoffset):
+        width = len(pboard.vert)
+        for y, row in enumerate(pboard.horz):
             for x, value in enumerate(row):
                 self.horz[yoffset + y][xoffset + x] = (
                         self.horz[yoffset + y][xoffset + x] or
                         value)
-        for y, row in enumerate(pwalls.vert):
+        for y, row in enumerate(pboard.vert):
             for x, value in enumerate(row):
                 self.vert[yoffset + y][xoffset + x] = (
                         self.vert[yoffset + y][xoffset + x] or
                         value)
+        # Handle targets.
+        for target, (x,y) in pboard.targets.iteritems():
+            self.targets[target] = (x + xoffset, y + yoffset)
 
 EMPTY_QUAD = """
 +--+--+--+--+--+--+--+--+
@@ -258,13 +276,14 @@ SIMPLE_BLUE_SUN_QUAD = """
 +  +  +  +  +  +  +  +  +
 """
 
-BASIC_BOARD = PWalls(
+BASIC_BOARD = PBoard(
         horz=[BOARD_WIDTH*[False] for i in range(BOARD_WIDTH+1)],
-        vert=[(BOARD_WIDTH + 1)*[False] for i in range(BOARD_WIDTH)])
-BASIC_BOARD.add_section(PWalls.from_str(SIMPLE_BLUE_MOON_QUAD, 8), 0, 0)
-BASIC_BOARD.add_section(PWalls.from_str(SIMPLE_BLUE_PLANET_QUAD, 8).rot90(), 8, 0)
-BASIC_BOARD.add_section(PWalls.from_str(SIMPLE_BLUE_STAR_QUAD, 8).rot180(), 8, 8)
-BASIC_BOARD.add_section(PWalls.from_str(SIMPLE_BLUE_SUN_QUAD, 8).rot270(), 0, 8)
+        vert=[(BOARD_WIDTH + 1)*[False] for i in range(BOARD_WIDTH)],
+        targets={})
+BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_MOON_QUAD, 8), 0, 0)
+BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_PLANET_QUAD, 8).rot90(), 8, 0)
+BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_STAR_QUAD, 8).rot180(), 8, 8)
+BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_SUN_QUAD, 8).rot270(), 0, 8)
 
 
 if __name__ == '__main__':
