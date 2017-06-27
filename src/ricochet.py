@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import ctypes
 import os
+import random
 
 libsimple = ctypes.CDLL(
         os.path.join('@CMAKE_BINARY_DIR@', 'libsimple.so'))
@@ -291,30 +292,47 @@ if __name__ == '__main__':
 
     print(BASIC_BOARD.to_str())
 
+    # Don't allow starting in the center 4 squares.
+    illegal_positions = [(3,3), (3,4), (4,3), (4,4)]
+    legal_positions = [
+            (x,y)
+                for x in range(BOARD_WIDTH)
+                for y in range(BOARD_WIDTH)
+                if (x,y) not in illegal_positions]
+
+    robot = 0
+    print('robot = %s' % robot)
+
+    starting_positions = random.sample(legal_positions, ROBOT_COUNT)
+    for i, p in enumerate(starting_positions):
+        print('Start %s = %s' % (i, p))
+
     board = BASIC_BOARD.to_board()
     state = State(
                 positions=StatePositions(
-                    Position(x=0, y=0),
-                    Position(x=0, y=1),
-                    Position(x=0, y=2),
-                    Position(x=0, y=3)))
+                    *[Position(x=x, y=y) for (x,y) in starting_positions]))
 
-    goal = Position(x=12, y=14)
-    solution = libsimple.solve(
-            ctypes.byref(board),
-            ctypes.byref(state),
-            0,
-            goal)
+    for symbol in ['M', 'P', 'S', 'U']:
+        for color in ['R', 'Y', 'G', 'B']:
+            target = BASIC_BOARD.targets[symbol + color]
+            print('target = (%s,%s)' % (target[0], target[1]))
+            goal = Position(x=target[0], y=target[1])
+            solution = libsimple.solve(
+                    ctypes.byref(board),
+                    ctypes.byref(state),
+                    robot,
+                    goal)
 
-    if solution.length < 0:
-        print('No solution')
-    else:
-        for i in range(solution.length):
-            move = solution.moves[i]
-            print(
-                    'robot = %s, start = (%s,%s), end = (%s,%s)' % (
-                        move.robot,
-                        move.start.x,
-                        move.start.y,
-                        move.end.x,
-                        move.end.y))
+            if solution.length < 0:
+                print('No solution')
+            else:
+                print('Solution length =', solution.length)
+                for i in range(solution.length):
+                    move = solution.moves[i]
+                    print(
+                            'robot = %s, start = (%s,%s), end = (%s,%s)' % (
+                                move.robot,
+                                move.start.x,
+                                move.start.y,
+                                move.end.x,
+                                move.end.y))
