@@ -66,6 +66,10 @@ typedef struct Solution {
 extern "C" {
 #endif
 
+int get_board_width();
+int get_max_moves();
+int get_robot_count();
+
 Solution solve(
         const Board *board, const State *state, int robot, Position goal);
 

@@ -74,6 +74,18 @@ struct HashState {
 
 }  // namespace
 
+int get_board_width() {
+    return BOARD_WIDTH;
+}
+
+int get_max_moves() {
+    return MAX_MOVES;
+}
+
+int get_robot_count() {
+    return ROBOT_COUNT;
+}
+
 Solution solve(
         const Board *board, const State *state, int robot, Position goal) {
 #ifndef NDEBUG
