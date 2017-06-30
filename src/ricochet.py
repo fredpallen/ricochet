@@ -357,11 +357,20 @@ def show_board(stdscr):
                 positions=StatePositions(
                     *[Position(x=x, y=y) for (x,y) in positions]))
 
-    target = BASIC_BOARD.targets['MR']
+    all_targets = [symbol + color for symbol in ['M', 'P', 'S', 'U']
+            for color in ['R', 'Y', 'G', 'B']]
+    target_str = random.choice(all_targets)
+    target = BASIC_BOARD.targets[target_str]
     goal = Position(x=target[0], y=target[1])
     board = BASIC_BOARD.to_board()
+    robot = (
+            0 if target_str[1] == 'R'
+            else 1 if target_str[1] == 'Y'
+            else 2 if target_str[1] == 'G'
+            else 3 if target_str[1] == 'B'
+            else 1)
     solution = libsimple.solve(
-            ctypes.byref(board), ctypes.byref(state), 0, goal)
+            ctypes.byref(board), ctypes.byref(state), robot, goal)
 
     if solution.length > 0:
         for i in range(solution.length):
