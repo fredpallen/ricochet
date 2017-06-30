@@ -341,7 +341,7 @@ def show_board(stdscr):
                 get_color(target[1]))
 
     # Draw robots.
-    illegal_positions = [(3,3), (3,4), (4,3), (4,4)]
+    illegal_positions = [(7,7), (7,8), (8,7), (8,8)]
     legal_positions = [
             (x,y)
                 for x in range(BOARD_WIDTH)
