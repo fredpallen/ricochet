@@ -6,6 +6,7 @@ import curses
 import ctypes
 import os
 import random
+import time
 
 libsimple = ctypes.CDLL(
         os.path.join('@CMAKE_BINARY_DIR@', 'libsimple.so'))
@@ -303,7 +304,7 @@ def get_color(c):
 def show_board(stdscr):
     width = BOARD_WIDTH*3 + 1
     height = BOARD_WIDTH*2 + 1
-    w = stdscr.subwin(height, width, 1, 1)
+    w = stdscr.subwin(height, width, 3, 1)
 
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
@@ -369,8 +370,12 @@ def show_board(stdscr):
             else 2 if target_str[1] == 'G'
             else 3 if target_str[1] == 'B'
             else 1)
+
     solution = libsimple.solve(
             ctypes.byref(board), ctypes.byref(state), robot, goal)
+    stdscr.addstr(1, 1,
+            'Target = %s, Robot = %s, Moves = %s' % (
+                target_str, robot, solution.length))
 
     if solution.length > 0:
         for i in range(solution.length):
@@ -437,8 +442,13 @@ def show_board(stdscr):
 
 if __name__ == '__main__':
     libsimple.solve.restype = Solution
+    
+    seed = int(time.time())
+    random.seed(seed)
 
     print(BASIC_BOARD.to_str())
 
     # Show board using curses.
     curses.wrapper(show_board)
+
+    print('Seed = %s' % seed)
