@@ -6,6 +6,7 @@ import curses
 import ctypes
 import os
 import random
+import sys
 import time
 
 libsimple = ctypes.CDLL(
@@ -454,7 +455,7 @@ def show_board(stdscr):
 if __name__ == '__main__':
     libsimple.solve.restype = Solution
     
-    seed = int(time.time())
+    seed = int(sys.argv[1]) if len(sys.argv) > 1 else int(time.time())
     random.seed(seed)
 
     # Show board using curses.
