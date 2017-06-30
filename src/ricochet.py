@@ -369,20 +369,31 @@ def show_board(stdscr):
                     *[Position(x=x, y=y) for (x,y) in positions]))
 
     all_targets = [symbol + color for symbol in ['M', 'P', 'S', 'U']
-            for color in ['R', 'Y', 'G', 'B']]
+            for color in ['R', 'Y', 'G', 'B']] + ['BW']
     target_str = random.choice(all_targets)
     target = BASIC_BOARD.targets[target_str]
     goal = Position(x=target[0], y=target[1])
     board = BASIC_BOARD.to_board()
-    robot = (
-            0 if target_str[1] == 'R'
-            else 1 if target_str[1] == 'Y'
-            else 2 if target_str[1] == 'G'
-            else 3 if target_str[1] == 'B'
-            else 1)
+    if target_str == 'BW':
+        best_solution = None
+        robot = None
+        for r in range(ROBOT_COUNT):
+            solution = libsimple.solve(
+                    ctypes.byref(board), ctypes.byref(state), r, goal)
+            if not best_solution or solution.length < best_solution.length:
+                best_robot = r
+                best_solution = solution
+        solution = best_solution
+    else:
+        robot = (
+                0 if target_str[1] == 'R'
+                else 1 if target_str[1] == 'Y'
+                else 2 if target_str[1] == 'G'
+                else 3 if target_str[1] == 'B'
+                else 1)
 
-    solution = libsimple.solve(
-            ctypes.byref(board), ctypes.byref(state), robot, goal)
+        solution = libsimple.solve(
+                ctypes.byref(board), ctypes.byref(state), robot, goal)
     robots_used = {
             solution.moves[i].robot for i in range(solution.length)}
     stdscr.addstr(1, 1,
