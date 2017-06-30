@@ -287,10 +287,29 @@ BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_PLANET_QUAD, 8).rot90(), 8, 
 BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_STAR_QUAD, 8).rot180(), 8, 8)
 BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_SUN_QUAD, 8).rot270(), 0, 8)
 
+def get_color(c):
+    if c == 'R':
+        return curses.color_pair(2)
+    if c == 'Y':
+        return curses.color_pair(3)
+    if c == 'G':
+        return curses.color_pair(4)
+    if c == 'B':
+        return curses.color_pair(5)
+    if c == 'W':
+        return curses.color_pair(6)
+    return None
+
 def show_board(stdscr):
     width = BOARD_WIDTH*3 + 1
     height = BOARD_WIDTH*2 + 1
     w = stdscr.subwin(height, width, 1, 1)
+
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(5, curses.COLOR_BLUE, curses.COLOR_BLACK)
+    curses.init_pair(6, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
 
     # Draw frame common to all boards.
     w.border()
@@ -315,8 +334,10 @@ def show_board(stdscr):
 
     # Draw targets.
     for target, position in BASIC_BOARD.targets.iteritems():
-        w.addch(1 + 2*position[1], 1 + 3*position[0], target[0])
-        w.addch(1 + 2*position[1], 2 + 3*position[0], target[1])
+        w.addch(1 + 2*position[1], 1 + 3*position[0], target[0],
+                get_color(target[1]))
+        w.addch(1 + 2*position[1], 2 + 3*position[0], target[1],
+                get_color(target[1]))
 
     # Draw robots.
     illegal_positions = [(3,3), (3,4), (4,3), (4,4)]
@@ -327,8 +348,8 @@ def show_board(stdscr):
                 if (x,y) not in illegal_positions]
     positions = random.sample(legal_positions, ROBOT_COUNT)
     for i, p in enumerate(positions):
-        w.addch(1 + 2*p[1], 1 + 3*p[0], 'R')
-        w.addch(1 + 2*p[1], 2 + 3*p[0], str(i))
+        w.addch(1 + 2*p[1], 1 + 3*p[0], '#', curses.color_pair(i + 2))
+        w.addch(1 + 2*p[1], 2 + 3*p[0], str(i), curses.color_pair(i + 2))
 
     # Solve a puzzle.
     board = BASIC_BOARD.to_board()
@@ -372,15 +393,31 @@ def show_board(stdscr):
                     2+3*positions[robot][0] + (s - 1)*direction[0], ' ')
                 # Add the targets back in.
                 for target, position in BASIC_BOARD.targets.iteritems():
-                    w.addch(1 + 2*position[1], 1 + 3*position[0], target[0])
-                    w.addch(1 + 2*position[1], 2 + 3*position[0], target[1])
+                    w.addch(1 + 2*position[1], 1 + 3*position[0], target[0],
+                            get_color(target[1]))
+                    w.addch(1 + 2*position[1], 2 + 3*position[0], target[1],
+                            get_color(target[1]))
+                # Add the other robots back in.
+                for r in range(ROBOT_COUNT):
+                    if r != robot:
+                        w.addch(1 + 2*positions[r][1], 1+3*positions[r][0],
+                                '#',
+                                curses.color_pair(r + 2))
+                        w.addch(1 + 2*positions[r][1], 2+3*positions[r][0],
+                                str(r),
+                                curses.color_pair(r + 2))
+
                 # Draw new position.
                 w.addch(
                     1+2*positions[robot][1] + s*direction[1],
-                    1+3*positions[robot][0] + s*direction[0], 'R')
+                    1+3*positions[robot][0] + s*direction[0],
+                    '#',
+                    curses.color_pair(robot + 2))
                 w.addch(
                     1+2*positions[robot][1] + s*direction[1],
-                    2+3*positions[robot][0] + s*direction[0], str(robot))
+                    2+3*positions[robot][0] + s*direction[0],
+                    str(robot),
+                    curses.color_pair(robot + 2))
                 w.refresh()
                 stdscr.getch()
             positions[robot] = (move.end.x, move.end.y)
