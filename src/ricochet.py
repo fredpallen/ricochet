@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import curses
 import ctypes
 import os
 import random
@@ -286,53 +287,112 @@ BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_PLANET_QUAD, 8).rot90(), 8, 
 BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_STAR_QUAD, 8).rot180(), 8, 8)
 BASIC_BOARD.add_section(PBoard.from_str(SIMPLE_BLUE_SUN_QUAD, 8).rot270(), 0, 8)
 
+def show_board(stdscr):
+    width = BOARD_WIDTH*3 + 1
+    height = BOARD_WIDTH*2 + 1
+    w = stdscr.subwin(height, width, 1, 1)
 
-if __name__ == '__main__':
-    libsimple.solve.restype = Solution
+    # Draw frame common to all boards.
+    w.border()
+    for i in range(BOARD_WIDTH - 1):
+        w.addch(2 + 2*i, 0, curses.ACS_LTEE)
+        w.addch(2 + 2*i, width - 1, curses.ACS_RTEE)
+        w.addch(0, 3 + 3*i, curses.ACS_TTEE)
+        w.addch(height - 1, 3 + 3*i, curses.ACS_BTEE)
+        for j in range(BOARD_WIDTH - 1):
+            w.addch(2 + 2*i, 3 + 3*j, curses.ACS_PLUS)
 
-    print(BASIC_BOARD.to_str())
+    # Draw walls specific to this board.
+    for y, row in enumerate(BASIC_BOARD.horz):
+        for x, value in enumerate(row):
+            if value:
+                w.addch(2*y, 3*x + 1, curses.ACS_HLINE)
+                w.addch(2*y, 3*x + 2, curses.ACS_HLINE)
+    for y, row in enumerate(BASIC_BOARD.vert):
+        for x, value in enumerate(row):
+            if value:
+                w.addch(1 + 2*y, 3*x, curses.ACS_VLINE)
 
-    # Don't allow starting in the center 4 squares.
+    # Draw targets.
+    for target, position in BASIC_BOARD.targets.iteritems():
+        w.addch(1 + 2*position[1], 1 + 3*position[0], target[0])
+        w.addch(1 + 2*position[1], 2 + 3*position[0], target[1])
+
+    # Draw robots.
     illegal_positions = [(3,3), (3,4), (4,3), (4,4)]
     legal_positions = [
             (x,y)
                 for x in range(BOARD_WIDTH)
                 for y in range(BOARD_WIDTH)
                 if (x,y) not in illegal_positions]
+    positions = random.sample(legal_positions, ROBOT_COUNT)
+    for i, p in enumerate(positions):
+        w.addch(1 + 2*p[1], 1 + 3*p[0], 'R')
+        w.addch(1 + 2*p[1], 2 + 3*p[0], str(i))
 
-    robot = 0
-    print('robot = %s' % robot)
-
-    starting_positions = random.sample(legal_positions, ROBOT_COUNT)
-    for i, p in enumerate(starting_positions):
-        print('Start %s = %s' % (i, p))
-
+    # Solve a puzzle.
     board = BASIC_BOARD.to_board()
     state = State(
                 positions=StatePositions(
-                    *[Position(x=x, y=y) for (x,y) in starting_positions]))
+                    *[Position(x=x, y=y) for (x,y) in positions]))
 
-    for symbol in ['M', 'P', 'S', 'U']:
-        for color in ['R', 'Y', 'G', 'B']:
-            target = BASIC_BOARD.targets[symbol + color]
-            print('target = (%s,%s)' % (target[0], target[1]))
-            goal = Position(x=target[0], y=target[1])
-            solution = libsimple.solve(
-                    ctypes.byref(board),
-                    ctypes.byref(state),
-                    robot,
-                    goal)
+    target = BASIC_BOARD.targets['MR']
+    goal = Position(x=target[0], y=target[1])
+    board = BASIC_BOARD.to_board()
+    solution = libsimple.solve(
+            ctypes.byref(board), ctypes.byref(state), 0, goal)
 
-            if solution.length < 0:
-                print('No solution')
-            else:
-                print('Solution length =', solution.length)
-                for i in range(solution.length):
-                    move = solution.moves[i]
-                    print(
-                            'robot = %s, start = (%s,%s), end = (%s,%s)' % (
-                                move.robot,
-                                move.start.x,
-                                move.start.y,
-                                move.end.x,
-                                move.end.y))
+    if solution.length > 0:
+        for i in range(solution.length):
+            move = solution.moves[i]
+            robot = move.robot
+            if move.start.x == move.end.x:
+                steps = move.end.y - move.start.y
+                if steps < 0:
+                    direction = (0, -1)
+                else:
+                    direction = (0, 1)
+                steps = 2*abs(steps)
+            if move.start.y == move.end.y:
+                steps = move.end.x - move.start.x
+                if steps < 0:
+                    direction = (-1, 0)
+                else:
+                    direction = (1, 0)
+                steps = 3*abs(steps)
+            w.refresh()
+            stdscr.getch()
+            for s in range(1, steps + 1):
+                # Erase old position.
+                w.addch(
+                    1+2*positions[robot][1] + (s - 1)*direction[1],
+                    1+3*positions[robot][0] + (s - 1)*direction[0], ' ')
+                w.addch(
+                    1+2*positions[robot][1] + (s - 1)*direction[1],
+                    2+3*positions[robot][0] + (s - 1)*direction[0], ' ')
+                # Add the targets back in.
+                for target, position in BASIC_BOARD.targets.iteritems():
+                    w.addch(1 + 2*position[1], 1 + 3*position[0], target[0])
+                    w.addch(1 + 2*position[1], 2 + 3*position[0], target[1])
+                # Draw new position.
+                w.addch(
+                    1+2*positions[robot][1] + s*direction[1],
+                    1+3*positions[robot][0] + s*direction[0], 'R')
+                w.addch(
+                    1+2*positions[robot][1] + s*direction[1],
+                    2+3*positions[robot][0] + s*direction[0], str(robot))
+                w.refresh()
+                stdscr.getch()
+            positions[robot] = (move.end.x, move.end.y)
+
+    w.refresh()
+    stdscr.getch()
+
+
+if __name__ == '__main__':
+    libsimple.solve.restype = Solution
+
+    print(BASIC_BOARD.to_str())
+
+    # Show board using curses.
+    curses.wrapper(show_board)
