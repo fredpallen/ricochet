@@ -373,9 +373,11 @@ def show_board(stdscr):
 
     solution = libsimple.solve(
             ctypes.byref(board), ctypes.byref(state), robot, goal)
+    robots_used = {
+            solution.moves[i].robot for i in range(solution.length)}
     stdscr.addstr(1, 1,
-            'Target = %s, Robot = %s, Moves = %s' % (
-                target_str, robot, solution.length))
+            'Target = %s, Robot = %s, Moves = %s, Robots Used = %s' % (
+                target_str, robot, solution.length, len(robots_used)))
 
     if solution.length > 0:
         for i in range(solution.length):
