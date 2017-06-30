@@ -1,4 +1,4 @@
-#include "ricochet.h"
+#include "split_maze.h"
 
 #include <assert.h>
 #include <stdbool.h>

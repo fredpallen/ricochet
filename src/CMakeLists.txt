@@ -4,7 +4,7 @@ project (Ricochet)
 
 set (CMAKE_CXX_STANDARD 11)
 
-add_library (ricochet SHARED ricochet.c)
+add_library (split_maze SHARED split_maze.c)
 add_library (simple SHARED simple.cc)
 
 # Copy python file to directory with other build products.
