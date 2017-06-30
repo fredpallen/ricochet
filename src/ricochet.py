@@ -304,7 +304,16 @@ def get_color(c):
 def show_board(stdscr):
     width = BOARD_WIDTH*3 + 1
     height = BOARD_WIDTH*2 + 1
-    w = stdscr.subwin(height, width, 3, 1)
+    maxy, maxx = stdscr.getmaxyx()
+    if maxy < height + 3:
+        raise Exception(
+                'Window height is only %s, '
+                'but must be at least %s to display board' % (maxy, height + 3))
+    if maxx < width + 1:
+        raise Exception(
+                'Window width is only %s, '
+                'but must be at least %s to display board' % (maxx, width + 3))
+    w = stdscr.subpad(height, width, 3, 1)
 
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
@@ -448,9 +457,10 @@ if __name__ == '__main__':
     seed = int(time.time())
     random.seed(seed)
 
-    print(BASIC_BOARD.to_str())
-
     # Show board using curses.
-    curses.wrapper(show_board)
+    try:
+        curses.wrapper(show_board)
+        print('Seed = %s' % seed)
+    except Exception as e:
+        print('ERROR: %s' % e.message)
 
-    print('Seed = %s' % seed)
