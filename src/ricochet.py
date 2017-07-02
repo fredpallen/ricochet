@@ -302,6 +302,29 @@ def get_color(c):
         return curses.color_pair(6)
     return None
 
+def solve_as_robot_0(board, state, robot, goal):
+    if not robot:
+        return libsimple.solve(
+                ctypes.byref(board), ctypes.byref(state), robot, goal)
+    else:
+        # Swap active robot with robot zero in the state object.
+        swapped_state = State(positions=StatePositions(*[
+            Position(x=p.x, y=p.y) for p in state.positions]))
+        swapped_state.positions[0] = state.positions[robot]
+        swapped_state.positions[robot] = state.positions[0]
+        solution = libsimple.solve(
+                ctypes.byref(board),
+                ctypes.byref(swapped_state),
+                0,
+                goal)
+        # Swap active robot with robot zero in solution.
+        for move in solution.moves:
+            if move.robot == 0:
+                move.robot = robot
+            elif move.robot == robot:
+                move.robot = 0
+        return solution
+
 def show_board(stdscr):
     width = BOARD_WIDTH*3 + 1
     height = BOARD_WIDTH*2 + 1
@@ -378,11 +401,10 @@ def show_board(stdscr):
         best_solution = None
         robot = None
         for r in range(ROBOT_COUNT):
-            solution = libsimple.solve(
-                    ctypes.byref(board), ctypes.byref(state), r, goal)
+            solution = solve_as_robot_0(board, state, r, goal)
             if not best_solution or solution.length < best_solution.length:
-                best_robot = r
                 best_solution = solution
+                robot = r
         solution = best_solution
     else:
         robot = (
@@ -392,8 +414,7 @@ def show_board(stdscr):
                 else 3 if target_str[1] == 'B'
                 else 4)
 
-        solution = libsimple.solve(
-                ctypes.byref(board), ctypes.byref(state), robot, goal)
+        solution = solve_as_robot_0(board, state, robot, goal)
     robots_used = {
             solution.moves[i].robot for i in range(solution.length)}
     stdscr.addstr(1, 1,
