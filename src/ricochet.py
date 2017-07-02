@@ -390,7 +390,7 @@ def show_board(stdscr):
                 else 1 if target_str[1] == 'Y'
                 else 2 if target_str[1] == 'G'
                 else 3 if target_str[1] == 'B'
-                else 1)
+                else 4)
 
         solution = libsimple.solve(
                 ctypes.byref(board), ctypes.byref(state), robot, goal)
